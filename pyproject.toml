@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "s1cover"
+version = "0.2.1"
+description = "Sentinel-1 ascending/descending coverage checker for InSAR study-area selection"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "asf-search>=14.1,<15",
+    "requests>=2",
+    "shapely>=2.1",
+]
+
+[project.optional-dependencies]
+desktop = [
+    "defusedxml>=0.7",
+    "pyproj>=3.6,<4",
+    "pyshp>=3,<4",
+]
+
+[project.scripts]
+s1cover = "s1cover.cli:main"
+
+[project.gui-scripts]
+s1cover-desktop = "s1cover.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
