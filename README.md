@@ -1,75 +1,65 @@
 # s1cover
 
-Summarize Sentinel-1 SLC scenes over a study area by pass direction and relative orbit.
-`s1cover` searches the Alaska Satellite Facility (ASF) catalog and reports the scene
-count and acquisition-date range for each ascending or descending track,
-imaging mode and polarization combination. Each row lists the contributing satellites.
+s1cover 通过阿拉斯加卫星设施（ASF）目录查询与研究区相交的 Sentinel-1 SLC 影像。结果按升降轨方向、相对轨道号、成像模式和极化方式分组，列出各组的卫星、影像景数和首末采集日期（UTC）。
 
-## Windows desktop
+## Windows 便携版
 
-Open `s1cover-0.2.1-windows-x64.exe` on 64-bit Windows. It includes Python and
-the GIS libraries and runs without installation. Enter a WGS84 bounding box or
-choose an AOI file, then click **查询 ASF**. The **载入公开示例** button fills in
-a public test area. Use **保存 Markdown** to export the track summary.
+[下载 s1cover 0.2.1（Windows x64）](https://github.com/mastre1/s1cover/releases/download/v0.2.1/s1cover-0.2.1-windows-x64.exe)
 
-| Input | Requirements |
+1. 在 64 位 Windows 上双击下载的 `.exe`。程序已包含 Python 和所需组件，开箱即用。
+2. 输入经纬度范围或选择研究区（AOI）文件。可以点击 **载入公开示例** 填入一组测试参数。
+3. 设置查询日期范围，点击 **查询 ASF**。查询完成后，点击 **保存 Markdown** 导出统计报告。
+
+| 研究区输入 | 格式要求 |
 | --- | --- |
-| Bounding box | West, south, east, north in WGS84 longitude and latitude degrees |
-| GeoJSON | One valid WGS84 Polygon without holes, matching the CLI |
-| SHP | Polygon shapefile. Put the matching `.prj` beside projected data. SHP without a `.prj` is read as WGS84. |
-| KML | Inline polygon areas in WGS84, including MultiGeometry polygons and interior rings |
-| ZIP | Exactly one SHP dataset, KML or GeoJSON. A SHP and its `.prj` must have the same stem and folder in the archive. |
+| 经纬度范围（BBox） | 按西界经度、南界纬度、东界经度、北界纬度的顺序填写 WGS84 坐标，单位为度。 |
+| GeoJSON | 一个有效的 WGS84 Polygon，且无内环。 |
+| SHP | 面状 Shapefile。使用投影坐标时，请将同名 `.prj` 放在同一目录。缺少 `.prj` 时按 WGS84 读取。 |
+| KML | 使用 WGS84 坐标的内嵌面要素，支持 `MultiGeometry` 中的面及内环。 |
+| ZIP | 仅包含一套 SHP 数据或一个 KML、GeoJSON 文件。SHP 和对应的 `.prj` 须同名并位于压缩包内同一目录。 |
 
-For SHP, KML and ZIP, the app reads only the geometry locally, converts it to
-WGS84 and sends a geometry-only request to NASA Earthdata CMR. The catalog
-accepts up to 500 polygon features, 5,000 vertices and a 1 MB geometry payload.
+SHP、KML 和 ZIP 在本机读取并转换为 WGS84。程序只向 NASA Earthdata CMR 发送查询所需的几何。此类查询最多接受 500 个面、5,000 个顶点和 1 MB 的几何请求。
 
-**网络连接** offers three modes. **自动** uses environment proxy settings or
-the manually configured Windows system proxy and retries directly if that proxy
-fails. PAC and WPAD scripts are not evaluated.
-**直连** ignores proxy settings. **手动代理** takes an HTTP(S) proxy such
-as `127.0.0.1:PORT`. The app leaves system proxy settings alone and keeps
-manual proxy details in memory for the current session.
+### 网络连接
 
-Catalog metadata queries are anonymous and use HTTPS. The computer must be able
-to reach `cmr.earthdata.nasa.gov` through the chosen network route.
+目录元数据查询通过 HTTPS 匿名进行，无需 ASF 或 Earthdata 账号。所选网络方式需要能访问 `cmr.earthdata.nasa.gov`。
 
-## CLI installation
+- **自动**：使用环境变量或 Windows 中手动配置的系统代理，代理连接失败后尝试直连。仅识别显式代理地址。
+- **直连**：跳过本机代理配置，直接访问查询服务。
+- **手动代理**：填写 HTTP(S) 代理地址，例如 `127.0.0.1:端口`。地址只在当前会话中使用。
 
-Use Python 3.10 or later. From the project root in PowerShell:
+## 命令行
+
+命令行版需要 Python 3.10 或更高版本。在项目目录下通过 PowerShell 安装。
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
 ```
 
-## Usage
-
-This example searches the San Francisco Bay Area:
+用经纬度范围查询旧金山湾区的公开示例。
 
 ```powershell
 .\.venv\Scripts\s1cover.exe check --bbox -122.5 37.7 -122.4 37.8 --start 2024-06-01 --end 2024-06-30
 ```
 
-In an activated virtual environment, use `s1cover` on any platform:
+激活虚拟环境后，可直接用 `s1cover` 查询 GeoJSON 并指定报告路径。
 
 ```sh
 s1cover check --geojson path/to/aoi.geojson --start 2024-06-01 --end 2024-06-30 --output output/aoi-report.md
 ```
 
-- `--bbox` takes `west south east north` in WGS84 longitude and latitude degrees.
-- `--geojson` accepts one valid WGS84 Polygon without holes, as a geometry, a Feature, or a single-Feature FeatureCollection. The ASF SDK can simplify polygon boundaries before querying the catalog.
-- `--start` and `--end` are optional UTC dates in `YYYY-MM-DD` format. The query uses `00:00:00` on the start date and `23:59:59` on the end date. Use a finite range for large searches.
-- The default maximum is 2,000 scenes. The report flags a possible truncation when the query hits that limit. Narrow the date range or set `--max-results` to a higher value.
-- The report is printed to the terminal and saved to `output/s1cover-report.md` by default. Use `--output` to choose a new path. Existing files are protected from overwrite.
+- `--bbox` 的参数顺序为西、南、东、北，使用 WGS84 经纬度。
+- `--geojson` 接受一个有效、无内环的 WGS84 Polygon。文件可为几何对象、Feature 或只含一个 Feature 的 FeatureCollection。ASF 查询库在提交查询前可能简化多边形边界。
+- `--start` 和 `--end` 均可省略，格式为 `YYYY-MM-DD`。时间按 UTC 计算，包含开始日 `00:00:00` 到结束日 `23:59:59`。范围较大的查询建议限定日期。
+- 默认最多返回 2,000 景。达到上限时，报告会提示结果可能被截断。可缩小日期范围，或用 `--max-results` 提高上限。
+- 报告输出到终端，并默认保存到 `output/s1cover-report.md`。可用 `--output` 指定路径，程序会保留已有同名文件。
 
-The query sends the AOI geometry to the ASF catalog. Catalog search requires an
-internet connection. No account or credentials are needed. The report summarizes
-catalog intersections. Full AOI coverage and InSAR pair suitability require further checks.
+目录结果按影像范围与研究区相交统计。评估影像是否完整覆盖研究区，或判断影像是否适合组成 InSAR 干涉对，需要进一步检查。
 
-## Development
+## 开发与打包
 
-In the virtual environment, run the offline tests and lint checks:
+在虚拟环境中安装开发依赖，运行离线测试和代码检查。
 
 ```sh
 python -m pip install -e '.[desktop]' pytest ruff
@@ -77,17 +67,15 @@ python -m pytest
 ruff check src tests scripts
 ```
 
-To build the portable executable, use 64-bit Windows Python with Tcl/Tk and run
-these PowerShell commands from the project root:
+使用带 Tcl/Tk 的 64 位 Windows Python，在项目根目录执行以下 PowerShell 命令。
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -e '.[desktop]' 'pyinstaller>=6.14,<7'
 .\scripts\build-windows.ps1
 ```
 
-The build writes the executable to `dist/` and prints its SHA-256. The `.exe`
-can be attached to a GitHub Release as a standalone asset.
+构建脚本将便携 EXE 输出到 `dist/`，并打印该文件的 SHA-256。
 
-## License
+## 许可证
 
-MIT
+[MIT](LICENSE)
