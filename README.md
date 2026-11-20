@@ -76,6 +76,11 @@ ruff check src tests scripts
 
 构建脚本将便携 EXE 输出到 `dist/`，并打印该文件的 SHA-256。
 
+## 贡献者
+
+- [mastre1](https://github.com/mastre1) · 项目维护
+- [Codex（OpenAI）](https://github.com/codex) · 协助实现、打包和编写文档
+
 ## 许可证
 
 [MIT](LICENSE)
